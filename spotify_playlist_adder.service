@@ -1,0 +1,12 @@
+[Unit]
+Description=Spotify Playlist Adder
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/pi/spotify_playlist_adder/venv/bin/python /home/pi/spotify_playlist_adder/bot.py
+WorkingDirectory=/home/pi/spotify_playlist_adder
+
+[Install]
+WantedBy=multi-user.target
