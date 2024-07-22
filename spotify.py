@@ -37,15 +37,16 @@ class PlaylistAdder:
         self.default_playlist = playlist
 
     def add_to_playlist(self, url: str):
-        # TODO validate
         o = urlparse(url)
-        if o.hostname not in ["open.spotify.com", "spotify.link"]:
+        if not o.hostname == "open.spotify.com":
+            # TODO add support for spotify.link shortlinks
+            # or (o.hostname == "spotify.link")
             return False
-        print(o.path)
+
         if o.path.startswith("/track"):
             track = self.sp.track(url)
             if track is not None:
-                self.user.playlist_add_items(self.default_playlist, [track["uri"]])
+                self.user.playlist_add_items(self.default_playlist, [track["uri"]], 0)
                 return True
         elif o.path.startswith("/album"):
             album = self.sp.album_tracks(url)
@@ -64,7 +65,4 @@ if __name__ == "__main__":
         conf["spotify_client_id"],
         conf["spotify_client_secret"],
         conf["default_playlist"],
-    )
-    pa.add_to_playlist(
-        "https://open.spotify.com/track/39ehI060oO7TqGtHOjXhkR?si=4dab4ef075e94340"
     )
