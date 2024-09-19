@@ -1,16 +1,31 @@
+from threading import Event, Thread, Timer
+from time import sleep
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 import yaml
 from pathlib import Path
 from pprint import pprint
 from urllib.parse import urlparse
+import logging
 
+
+log = logging.getLogger()
 basePath = Path(__file__).parent
 cachePath = basePath / ".cache"
 
 
 class PlaylistAdder:
     def __init__(self, client_id: str, client_secret: str, playlist: str) -> None:
+        self.default_playlist = playlist
+        self.client_id = client_id
+        self.client_secret = client_secret
+
+        self.authenticate()
+        self.stop_event = Event()
+        self.refresh_thread = Thread(target=self.refresh_token)
+        self.refresh_thread.start()
+
+    def authenticate(self):
         redirectUrl = "https://example.com/callback"
         scope = " ".join(
             [
@@ -19,22 +34,30 @@ class PlaylistAdder:
             ]
         )
 
-        self.user = spotipy.Spotify(
-            auth_manager=SpotifyOAuth(
-                client_id=client_id,
-                client_secret=client_secret,
-                redirect_uri=redirectUrl,
-                scope=scope,
-                cache_path=cachePath,
-            )
+        self.auth_manager = SpotifyOAuth(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            redirect_uri=redirectUrl,
+            scope=scope,
+            cache_path=cachePath,
         )
+        self.user = spotipy.Spotify(auth_manager=self.auth_manager)
 
         self.sp = spotipy.Spotify(
             client_credentials_manager=SpotifyClientCredentials(
-                client_id=client_id, client_secret=client_secret
+                client_id=self.client_id, client_secret=self.client_secret
             )
         )
-        self.default_playlist = playlist
+
+    def stop(self):
+        self.stop_event.set()
+
+    def refresh_token(self):
+        while not self.stop_event.is_set():
+            log.warning("refeshing token")
+            token_info = self.auth_manager.cache_handler.get_cached_token()
+            self.auth_manager.refresh_access_token(token_info["refresh_token"])
+            sleep(30 * 60)
 
     def add_to_playlist(self, url: str):
         o = urlparse(url)

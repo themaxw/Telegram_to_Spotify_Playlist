@@ -79,3 +79,4 @@ if __name__ == "__main__":
     app.add_handler(url_handler)
 
     app.run_polling()
+    playlistadder.stop()
