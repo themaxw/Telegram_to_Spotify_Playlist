@@ -54,10 +54,10 @@ class PlaylistAdder:
 
     def refresh_token(self):
         while not self.stop_event.is_set():
+            sleep(30 * 60)
             log.warning("refeshing token")
             token_info = self.auth_manager.cache_handler.get_cached_token()
             self.auth_manager.refresh_access_token(token_info["refresh_token"])
-            sleep(30 * 60)
 
     def add_to_playlist(self, url: str):
         o = urlparse(url)
