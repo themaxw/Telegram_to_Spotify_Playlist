@@ -1,6 +1,7 @@
 from threading import Event, Thread, Timer
 from time import sleep
 import spotipy
+from spotipy import CacheFileHandler
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 import yaml
 from pathlib import Path
@@ -39,7 +40,8 @@ class PlaylistAdder:
             client_secret=self.client_secret,
             redirect_uri=redirectUrl,
             scope=scope,
-            cache_path=cachePath,
+            cache_handler=CacheFileHandler(cachePath),
+            open_browser=False,
         )
         self.user = spotipy.Spotify(auth_manager=self.auth_manager)
 
@@ -57,7 +59,14 @@ class PlaylistAdder:
             sleep(30 * 60)
             log.warning("refeshing token")
             token_info = self.auth_manager.cache_handler.get_cached_token()
-            self.auth_manager.refresh_access_token(token_info["refresh_token"])
+            while True:
+                try:
+                    self.auth_manager.refresh_access_token(token_info["refresh_token"])
+                    break
+                except spotipy.oauth2.SpotifyOauthError as e:
+                    log.error("error during refresh: %s, retrying...", e.error)
+
+                sleep(1)
 
     def add_to_playlist(self, url: str):
         o = urlparse(url)
